@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
@@ -104,8 +104,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/gridwatch/FDTKit.git" ../FDTKit
-          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/gridwatch/tooling.git" ../tooling
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/fd1x/FDTKit.git" ../FDTKit
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/fd1x/tooling.git" ../tooling
 
       # No open-source-toolchain install: forcing TOOLCHAINS=swift breaks SPM
       # manifest compilation on the runner (posix_spawn linker errors).
