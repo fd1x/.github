@@ -1,6 +1,6 @@
 # Privacy Policy
 
-> This document describes the Privacy Policy for [grdwt.ch](https://grdwt.ch/) and [@gridwatch](https://github.com/gridwatch).
+> This document describes the Privacy Policy for [grdwt.ch](https://grdwt.ch/) and [@fd1x](https://github.com/fd1x).
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@
 
 ## Scope
 
-This privacy statement applies to [grdwt.ch](https://grdwt.ch/), the GRIDWATCH applications, and all domains and repositories operated under [@gridwatch](https://github.com/gridwatch).
+This privacy statement applies to [grdwt.ch](https://grdwt.ch/), the GRIDWATCH applications, and all domains and repositories operated under [@fd1x](https://github.com/fd1x).
 
 ## What We Collect
 
@@ -66,7 +66,7 @@ Because we do not collect personal data, most data-subject rights do not apply b
 
 We may amend this privacy statement if necessary.
 
-The latest version can be found at [github.com/gridwatch/.github/blob/main/PRIVACY.md](https://github.com/gridwatch/.github/blob/main/PRIVACY.md).
+The latest version can be found at [github.com/fd1x/.github/blob/main/PRIVACY.md](https://github.com/fd1x/.github/blob/main/PRIVACY.md).
 
 ## Contact
 
