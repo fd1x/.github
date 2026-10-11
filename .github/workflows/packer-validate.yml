@@ -1,0 +1,117 @@
+---
+
+# Managed by gridwatch/infrastructure-github.
+# Manual edits will be overwritten on the next `terraform apply`.
+#
+# Action pins live in its `locals.tf`. Never merge a Dependabot pull request
+# against this file; bump the pin there instead.
+
+name: packer-validate
+
+on:
+  workflow_call:
+    inputs:
+      directories:
+        description: 'Space-separated directories to validate, each holding its own *.pkr.hcl templates'
+        type: string
+        required: true
+      var-files:
+        description: 'Space-separated -var-file names, applied within each directory'
+        type: string
+        default: ''
+      fmt-skip:
+        description: 'Space-separated file names exempt from the fmt check (e.g. a hand-aligned var file)'
+        type: string
+        default: ''
+      validate-vars:
+        description: 'Extra flags appended to packer validate, e.g. "-var vm_name=validate-only"'
+        type: string
+        default: ''
+
+# SHA for pushes, ref for pull requests, so a burst of pushes cannot leave a
+# branch tip holding `cancelled` checks; see infrastructure-github AGENTS.md
+# (Workflow concurrency).
+concurrency:
+  group: ${{ github.repository }}-packer-validate-${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  packer-validate:
+    name: packer-validate
+    # The Tart plugin (github.com/cirruslabs/tart) ships darwin_amd64/darwin_arm64 builds only, so
+    # `packer init` needs a macOS runner even though nothing here builds a VM.
+    #
+    # Org-wide macOS runner switch; see infrastructure-github AGENTS.md (macOS runner gate). Unset or
+    # anything but "true" means disabled.
+    if: ${{ vars.MACOS_RUNNERS_ENABLED == 'true' }}
+    runs-on: macos-26
+    steps:
+      # see: https://github.com/actions/checkout/releases/tag/v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      # see: https://github.com/hashicorp/setup-packer/releases/tag/v3.4.0
+      - uses: hashicorp/setup-packer@ce93c3c08a6c2ff2275bf4b54ff0d9a75f6c9789  # v3.4.0
+        with:
+          version: '1.16.1'
+
+      - name: packer init
+        env:
+          DIRECTORIES: ${{ inputs.directories }}
+          # `packer init` lists the plugin's releases through the GitHub API, which rate-limits
+          # an anonymous hosted runner. Only this step holds the token, so `packer validate` and
+          # the plugins it starts never inherit it.
+          PACKER_GITHUB_API_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # `required: true` accepts an empty string, and the loops would then pass having
+          # validated nothing.
+          if [ -z "${DIRECTORIES//[[:space:]]/}" ]; then
+            echo "::error::The directories input names no directory, so nothing would be validated."
+            exit 1
+          fi
+          for dir in ${DIRECTORIES}; do
+            echo "::group::${dir}"
+            (
+              cd "${dir}"
+              packer init .
+            )
+            echo "::endgroup::"
+          done
+
+      - name: packer fmt and validate
+        env:
+          DIRECTORIES: ${{ inputs.directories }}
+          VAR_FILES: ${{ inputs.var-files }}
+          FMT_SKIP: ${{ inputs.fmt-skip }}
+          VALIDATE_VARS: ${{ inputs.validate-vars }}
+        run: |
+          set -euo pipefail
+          for dir in ${DIRECTORIES}; do
+            echo "::group::${dir}"
+            (
+              cd "${dir}"
+              # A file in FMT_SKIP is checked by validate only: packer fmt would undo
+              # a hand-aligned var file.
+              for f in *.pkr.hcl *.pkrvars.hcl; do
+                [ -e "${f}" ] || continue
+                skip=false
+                for s in ${FMT_SKIP}; do
+                  [ "${f}" = "${s}" ] && skip=true
+                done
+                [ "${skip}" = true ] || packer fmt -check -diff "${f}"
+              done
+
+              var_file_args=()
+              for vf in ${VAR_FILES}; do
+                var_file_args+=("-var-file=${vf}")
+              done
+              # The `+` form because the runner's bash 3.2 treats an empty array as unset.
+              packer validate ${var_file_args[@]+"${var_file_args[@]}"} ${VALIDATE_VARS} .
+            )
+            echo "::endgroup::"
+          done
