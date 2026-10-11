@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
@@ -44,7 +44,7 @@ jobs:
       # Cloned outside the workspace and copied in, as in the prose reusable:
       # the caller must sit at the workspace root, and a clone inside is linted.
       - name: Checkout linter configs
-        run: git clone --depth 1 --branch main --single-branch https://github.com/gridwatch/.github.git ../fleet-config
+        run: git clone --depth 1 --branch main --single-branch https://github.com/fd1x/.github.git ../fleet-config
 
       # eslint keeps its own filename; stylelint is told its config filename via CSS_FILE_NAME.
       - name: Copy linter configs into workspace
