@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
@@ -40,7 +40,7 @@ jobs:
       # Cloned outside the workspace with plain git: Super-Linter resolves
       # DEFAULT_BRANCH against the workspace root, so the caller must stay there.
       - name: Checkout linter configs
-        run: git clone --depth 1 --branch main --single-branch https://github.com/gridwatch/.github.git ../fleet-config
+        run: git clone --depth 1 --branch main --single-branch https://github.com/fd1x/.github.git ../fleet-config
 
       # Super-Linter reads per-language configs from `.github/linters/`, so they
       # are copied in. The *_CONFIG_FILE vars below are still required.
