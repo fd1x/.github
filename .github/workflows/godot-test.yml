@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
@@ -71,7 +71,7 @@ on:
         default: ''
       twelve-bravo-ref:
         description: >-
-          Commit SHA of gridwatch/twelve-bravo to run the validator from.
+          Commit SHA of fd1x/twelve-bravo to run the validator from.
           Pinned rather than tracking a branch so a twelve-bravo merge cannot
           silently change what this gate accepts.
         type: string
@@ -396,7 +396,7 @@ jobs:
       # see: https://github.com/actions/checkout/releases/tag/v7.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          repository: gridwatch/twelve-bravo
+          repository: fd1x/twelve-bravo
           ref: ${{ inputs.twelve-bravo-ref }}
           token: ${{ steps.app-token.outputs.token }}
           path: twelve-bravo
@@ -409,11 +409,11 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${GH_TOKEN}" ]; then
-            echo "::error::the validator needs the repo-access App token for the private gridwatch modules"
+            echo "::error::the validator needs the repo-access App token for the private fd1x modules"
             exit 1
           fi
-          echo "GOPRIVATE=github.com/gridwatch/*" >> "$GITHUB_ENV"
-          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/gridwatch/".insteadOf "https://github.com/gridwatch/"
+          echo "GOPRIVATE=github.com/fd1x/*" >> "$GITHUB_ENV"
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/fd1x/".insteadOf "https://github.com/fd1x/"
 
       # see: https://github.com/actions/setup-go/releases/tag/v7.0.0
       - id: setup-go
