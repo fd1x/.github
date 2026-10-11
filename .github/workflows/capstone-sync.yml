@@ -48,16 +48,16 @@ on:
           Comma-separated repository names whose deploy.yml is dispatched on main once the
           import this sync queued is done (e.g. 'fdt-website'): its import job, and the Feed Me
           sequence when the sync response names one. A webhook-url that carries feedMe=queue
-          must get a sequence back, or nothing is rebuilt. Empty, the default, posts the feed
-          and stops: nothing is waited for and no site is rebuilt.
+          or feedMe=all must get a sequence back, or nothing is rebuilt. Empty, the default,
+          posts the feed and stops: nothing is waited for and no site is rebuilt.
         type: string
         default: ''
       wait-seconds:
         description: |
           How long to wait for the import before failing the run. For an import job alone it
           is a fixed limit. When a Feed Me sequence is followed it is a no-progress limit: it
-          starts again each time the sequence has fewer feeds left. Nothing is rebuilt on a
-          timeout; the sites' daily build is the fallback.
+          starts again each time a feed finishes or the running feed reaches a new batch.
+          Nothing is rebuilt on a timeout; the sites' daily build is the fallback.
         type: number
         default: 600
     secrets:
@@ -382,8 +382,9 @@ jobs:
             echo "::error::The sync response carries a feedMe value this step cannot follow. Nothing was rebuilt."
             exit 1
           fi
-          # A sync asks for a sequence with the query parameter feedMe=queue, name and value
-          # exact. The last `feedMe` wins, as it does when Craft reads the query.
+          # A sync asks for a sequence with the query parameter feedMe=queue (the changed CSVs)
+          # or feedMe=all (every CSV), name and value exact. The last `feedMe` wins, as it does
+          # when Craft reads the query.
           asked=''
           if [[ "${WEBHOOK_URL}" == *\?* ]]; then
             query="${WEBHOOK_URL#*\?}"
@@ -395,9 +396,10 @@ jobs:
             done
           fi
           # No sequence is then a CAPSTONE that ignored the request or had nothing to queue.
-          # Following the job alone would rebuild the sites before any CSV import.
-          if [[ "${asked}" == "queue" && "${sequence}" == "none" ]]; then
-            echo "::error::CAPSTONE queued no Feed Me sequence although this sync asked for one (feedMe=queue). Likely an image without the feature, no feed matching the staged CSVs, or a storage account mismatch. The data was sent; only the rebuild was withheld. Nothing was rebuilt."
+          # Following the job alone would rebuild the sites before any CSV import. A sync with
+          # nothing to import still gets a sequence, one with no feeds, so null is never that.
+          if [[ ( "${asked}" == "queue" || "${asked}" == "all" ) && "${sequence}" == "none" ]]; then
+            echo "::error::CAPSTONE queued no Feed Me sequence although this sync asked for one (feedMe=${asked}; feedMe=queue and feedMe=all both must get one). Likely an image without the feature, no feed matching the staged CSVs, or a storage account mismatch. The data was sent; only the rebuild was withheld. Nothing was rebuilt."
             exit 1
           fi
           if [[ "${job}" == "none" && "${sequence}" == "none" ]]; then
@@ -426,9 +428,13 @@ jobs:
             label+="sequence ${sequence}"
           fi
           deadline=$((SECONDS + WAIT_SECONDS))
-          # Fewest feeds the sequence has had left. Only a count below it restarts the deadline,
-          # so a stalled sequence times out and the restarts are bounded by the first count.
+          # Fewest feeds the sequence has had left. A count below it restarts the deadline.
           lowest=''
+          # Highest batch the running feed has reached while the count stood at `lowest`. A
+          # batch above it restarts the deadline too, so one long feed is followed batch by
+          # batch. It starts again only when the count falls, so a stalled feed, or one whose
+          # batch number falls back or repeats, times out.
+          best=0
           # The count in the newest answer that carried one, for the timeout message.
           latest=''
           # The deadline is checked after a poll, not before, so the import is always asked once
@@ -454,15 +460,27 @@ jobs:
                   else
                     latest="${remaining}"
                   fi
+                  # Absent from an image that predates it, and then nothing below changes. A
+                  # string, a negative or a fraction is not a batch number and counts as absent.
+                  batches=$(jq -r '.csv.batches? | select(type == "number" and . >= 0 and . == floor)' status.json 2>/dev/null || true)
+                  if [[ ! "${batches}" =~ ^[0-9]+$ ]]; then
+                    batches=''
+                  fi
                   if [[ -z "${remaining}" ]]; then
                     :
                   elif [[ -z "${lowest}" ]]; then
                     lowest="${remaining}"
+                    best="${batches:-0}"
                     echo "csv: ${remaining} feed(s) left"
                   elif (( remaining < lowest )); then
                     lowest="${remaining}"
+                    best="${batches:-0}"
                     deadline=$((SECONDS + WAIT_SECONDS))
                     echo "csv: ${remaining} feed(s) left"
+                  elif (( remaining == lowest )) && [[ -n "${batches}" ]] && (( batches > best )); then
+                    best="${batches}"
+                    deadline=$((SECONDS + WAIT_SECONDS))
+                    echo "csv: batch ${batches} of the running feed"
                   fi
                 fi
                 case "${state}" in
