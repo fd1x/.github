@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
