@@ -1,6 +1,6 @@
 # Security Policy
 
-> This document describes the Security Policy for [@gridwatch](https://github.com/gridwatch).
+> This document describes the Security Policy for [@fd1x](https://github.com/fd1x).
 
 ## Table of Contents
 
