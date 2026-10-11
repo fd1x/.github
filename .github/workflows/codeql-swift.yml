@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
@@ -116,7 +116,7 @@ jobs:
             echo "::error::FDTKit is private; this run has no REPO_ACCESS_APP_* secrets to clone it"
             exit 1
           fi
-          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/gridwatch/FDTKit.git" ../FDTKit
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/fd1x/FDTKit.git" ../FDTKit
 
       # The release archive is cached, never the unpacked binary, so the
       # checksum below verifies a restored copy exactly as it does a download.
