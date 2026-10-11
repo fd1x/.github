@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
@@ -76,7 +76,7 @@ jobs:
           if [ -d ../tooling ]; then
             echo "../tooling is the workspace itself; using the checkout"
           else
-            git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/gridwatch/tooling.git" ../tooling
+            git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/fd1x/tooling.git" ../tooling
           fi
 
       # The release archive is cached, never the unpacked binary, so the
