@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
@@ -32,7 +32,7 @@ on:
       # The fleet config assumes a standalone document (no inline HTML, one h1,
       # no repeated headings); Hugo content repos name a config for that shape.
       markdown-config:
-        description: 'markdownlint config filename in gridwatch/.github'
+        description: 'markdownlint config filename in fd1x/.github'
         type: string
         default: 'markdownlint.yml'
 
@@ -63,7 +63,7 @@ jobs:
       # DEFAULT_BRANCH with git at the workspace root, so the caller must stay
       # there — and a config checked out inside it would be linted.
       - name: Checkout linter configs
-        run: git clone --depth 1 --branch main --single-branch https://github.com/gridwatch/.github.git ../fleet-config
+        run: git clone --depth 1 --branch main --single-branch https://github.com/fd1x/.github.git ../fleet-config
 
       - name: Copy linter configs into workspace
         env:
