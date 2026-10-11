@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
@@ -68,7 +68,7 @@ jobs:
       # this clone needs no credentials and works for public and fork callers.
       # Outside the workspace, so ruff never lints the config repository.
       - name: Checkout lint config
-        run: git clone --depth 1 --branch main --single-branch https://github.com/gridwatch/.github.git ../fleet-config
+        run: git clone --depth 1 --branch main --single-branch https://github.com/fd1x/.github.git ../fleet-config
 
       # No `cache:` here: setup-python's cache saves on every run and holds
       # only wheels. The restore below brings back the built virtualenv.
