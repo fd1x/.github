@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
@@ -24,19 +24,19 @@ on:
         type: string
         default: deny
       twelve-bravo-ref:
-        description: 'Commit SHA of gridwatch/twelve-bravo to run the validator from'
+        description: 'Commit SHA of fd1x/twelve-bravo to run the validator from'
         type: string
         required: true
       also-root-repo:
         description: |
-          Space-separated names of the other gridwatch feed repos whose root schemas join 12b's
+          Space-separated names of the other fd1x feed repos whose root schemas join 12b's
           global handle check (for example 'world-data sim-data'). Nothing in them is validated
           and no finding is attributed to them. Empty runs no cross-repo check.
         type: string
         default: ''
       theater-server-ref:
         description: |
-          Commit SHA of gridwatch/theater-server to run `content validate` from, the game-rule
+          Commit SHA of fd1x/theater-server to run `content validate` from, the game-rule
           half of the gate. Empty skips it, which is what a repo holding no game content does.
         type: string
         default: ''
@@ -113,7 +113,7 @@ jobs:
       - name: Checkout twelve-bravo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          repository: gridwatch/twelve-bravo
+          repository: fd1x/twelve-bravo
           ref: ${{ inputs.twelve-bravo-ref }}
           path: twelve-bravo
           token: ${{ steps.app-token.outputs.token }}
@@ -126,7 +126,7 @@ jobs:
         if: ${{ inputs.theater-server-ref != '' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          repository: gridwatch/theater-server
+          repository: fd1x/theater-server
           ref: ${{ inputs.theater-server-ref }}
           path: theater-server
           token: ${{ steps.app-token.outputs.token }}
@@ -140,11 +140,11 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${GH_TOKEN}" ]; then
-            echo "::error::the validators need the repo-access App token for the private gridwatch modules"
+            echo "::error::the validators need the repo-access App token for the private fd1x modules"
             exit 1
           fi
-          echo "GOPRIVATE=github.com/gridwatch/*" >> "$GITHUB_ENV"
-          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/gridwatch/".insteadOf "https://github.com/gridwatch/"
+          echo "GOPRIVATE=github.com/fd1x/*" >> "$GITHUB_ENV"
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/fd1x/".insteadOf "https://github.com/fd1x/"
 
       # Deliberately unpinned, unlike the two validators: the other side of a "do the feed repos
       # agree right now" question, not a gate input. One clone per name, since actions/checkout
@@ -162,7 +162,7 @@ jobs:
               echo "::error::also-root-repo holds an invalid repository name: ${repo}"
               exit 1
             fi
-            git clone --depth 1 -- "https://github.com/gridwatch/${repo}.git" "${repo}"
+            git clone --depth 1 -- "https://github.com/fd1x/${repo}.git" "${repo}"
           done
 
       # setup-go's own cache would look for a go.sum at the workspace root,
