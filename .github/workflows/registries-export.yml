@@ -1,13 +1,13 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
 # against this file; bump the pin there instead.
 
 # Turns a CAPSTONE export push on `craft-export` into a pull request against
-# gridwatch/registries. Validation is deliberately not here: registries'
+# fd1x/registries. Validation is deliberately not here: registries'
 # own fdt-validate.yml runs `12b validate` on the pull request this opens.
 
 name: Registries Export
