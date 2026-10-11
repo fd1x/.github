@@ -1,6 +1,6 @@
 ---
 
-# Managed by gridwatch/infrastructure-github.
+# Managed by fd1x/infrastructure-github.
 # Manual edits will be overwritten on the next `terraform apply`.
 #
 # Action pins live in its `locals.tf`. Never merge a Dependabot pull request
@@ -25,7 +25,7 @@ name: macOS Release Sign
 #
 #   cosign verify-blob checksums.txt \
 #     --bundle checksums.txt.sigstore.json \
-#     --certificate-identity-regexp '^https://github\.com/gridwatch/\.github/\.github/workflows/macos-release-sign\.yml@' \
+#     --certificate-identity-regexp '^https://github\.com/fd1x/\.github/\.github/workflows/macos-release-sign\.yml@' \
 #     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
 #     --certificate-github-workflow-repository <owner>/<repo>
 
@@ -195,7 +195,7 @@ jobs:
           set -euo pipefail
           cosign verify-blob checksums.txt \
             --bundle checksums.txt.sigstore.json \
-            --certificate-identity-regexp '^https://github\.com/gridwatch/\.github/\.github/workflows/macos-release-sign\.yml@' \
+            --certificate-identity-regexp '^https://github\.com/fd1x/\.github/\.github/workflows/macos-release-sign\.yml@' \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-github-workflow-repository "${GITHUB_REPOSITORY}"
           sha256sum -c checksums.txt
