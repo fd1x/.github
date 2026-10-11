@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD013 -->
 # Code of Conduct
 
-> This document describes the Code of Conduct for [@gridwatch](https://github.com/gridwatch).
+> This document describes the Code of Conduct for [@fd1x](https://github.com/fd1x).
 
 ## Table of Contents
 
