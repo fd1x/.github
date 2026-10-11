@@ -1,6 +1,6 @@
 # Versioning Policy
 
-> This document describes the Versioning Policy for [@gridwatch](https://github.com/gridwatch).
+> This document describes the Versioning Policy for [@fd1x](https://github.com/fd1x).
 
 ## Table of Contents
 
@@ -14,7 +14,7 @@
   * [Language Runtimes](#language-runtimes)
 <!-- TOC -->
 
-The [@gridwatch](https://github.com/gridwatch) project aims to deliver code that results in a predictable and reproducible outcome.
+The [@fd1x](https://github.com/fd1x) project aims to deliver code that results in a predictable and reproducible outcome.
 
 Version-pinning is a foundational aspect of this goal.
 
@@ -69,7 +69,7 @@ Actions are pinned to **exact tag versions** and accompanied by a `# see` commen
   uses: actions/checkout@v7.0.0
 ```
 
-Version constants live in [`infrastructure-github/locals.tf`](https://github.com/gridwatch/infrastructure-github/blob/main/locals.tf) and are templated into workflow files via Terraform.
+Version constants live in [`infrastructure-github/locals.tf`](https://github.com/fd1x/infrastructure-github/blob/main/locals.tf) and are templated into workflow files via Terraform.
 
 `actions/checkout@v4` is prohibited — use `v6` or later.
 
