@@ -29,13 +29,22 @@ on:
         type: boolean
         required: false
         default: false
+      capstone-endpoint:
+        description: >-
+          CAPSTONE GraphQL endpoint to build from, for a copy that reads another
+          CAPSTONE. Empty builds from `params.capstone.endpoint` in the site's
+          own config.
+        type: string
+        required: false
+        default: ''
     secrets:
       CLOUDFLARE_PAGES_API_TOKEN:
         required: true
       CLOUDFLARE_ACCOUNT_ID:
         required: true
       # Sites that read CAPSTONE at build time (terminology-website) pass these;
-      # every other site leaves them unset and never reads them.
+      # every other site leaves them unset and never reads them. A copy that
+      # sets `capstone-endpoint` maps that CAPSTONE's credentials onto these names.
       CAPSTONE_GRAPHQL_TOKEN:
         required: false
       CAPSTONE_CF_ACCESS_CLIENT_ID:
@@ -74,11 +83,17 @@ jobs:
           CAPSTONE_CF_ACCESS_CLIENT_ID: ${{ secrets.CAPSTONE_CF_ACCESS_CLIENT_ID }}
           CAPSTONE_CF_ACCESS_CLIENT_SECRET: ${{ secrets.CAPSTONE_CF_ACCESS_CLIENT_SECRET }}
           BASE_URL: ${{ inputs.base-url }}
+          CAPSTONE_ENDPOINT: ${{ inputs.capstone-endpoint }}
         # HUGO_BASEURL is exported only when the caller passes one, so an empty
         # value can never stand in for the baseURL in the site's own config.
+        # HUGO_PARAMS_CAPSTONE_ENDPOINT follows the same rule for
+        # `params.capstone.endpoint`.
         run: |
           if [ -n "${BASE_URL}" ]; then
             export HUGO_BASEURL="${BASE_URL}"
+          fi
+          if [ -n "${CAPSTONE_ENDPOINT}" ]; then
+            export HUGO_PARAMS_CAPSTONE_ENDPOINT="${CAPSTONE_ENDPOINT}"
           fi
           hugo
 
