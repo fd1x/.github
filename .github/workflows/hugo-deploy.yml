@@ -15,6 +15,20 @@ on:
         description: 'Cloudflare Pages project name'
         type: string
         required: true
+      base-url:
+        description: >-
+          Base URL to build the site with, for a copy served from another
+          hostname. Empty builds with the baseURL in the site's own config.
+        type: string
+        required: false
+        default: ''
+      noindex:
+        description: >-
+          Serve every path with `X-Robots-Tag: noindex`, for a copy that search
+          engines must not index.
+        type: boolean
+        required: false
+        default: false
     secrets:
       CLOUDFLARE_PAGES_API_TOKEN:
         required: true
@@ -59,7 +73,25 @@ jobs:
           CAPSTONE_GRAPHQL_TOKEN: ${{ secrets.CAPSTONE_GRAPHQL_TOKEN }}
           CAPSTONE_CF_ACCESS_CLIENT_ID: ${{ secrets.CAPSTONE_CF_ACCESS_CLIENT_ID }}
           CAPSTONE_CF_ACCESS_CLIENT_SECRET: ${{ secrets.CAPSTONE_CF_ACCESS_CLIENT_SECRET }}
-        run: hugo
+          BASE_URL: ${{ inputs.base-url }}
+        # HUGO_BASEURL is exported only when the caller passes one, so an empty
+        # value can never stand in for the baseURL in the site's own config.
+        run: |
+          if [ -n "${BASE_URL}" ]; then
+            export HUGO_BASEURL="${BASE_URL}"
+          fi
+          hugo
+
+      # Cloudflare Pages reads `_headers` from the root of the deployed
+      # directory. No site ships one; a site that starts to must merge the two.
+      - name: Write noindex headers
+        if: inputs.noindex
+        run: |
+          if [ -e public/_headers ]; then
+            echo "::error::public/_headers already exists; refusing to overwrite it with the noindex rule." >&2
+            exit 1
+          fi
+          printf '/*\n  X-Robots-Tag: noindex\n' > public/_headers
 
       # wrangler-action spawns `command` directly (no shell), so the branch name
       # cannot inject; this guard pins the charset rather than trusting that.
