@@ -59,7 +59,7 @@ on:
         required: false
       REPO_ACCESS_APP_PRIVATE_KEY:
         required: false
-      # The FDT Package Publisher App halves: installed on fd1x/homebrew-tap
+      # The FD1x Release Bot App halves: installed on fd1x/homebrew-tap
       # and scoop-bucket only, minted below into a per-run token for the cask
       # and manifest pull requests. GitHub signs an App token's API commits, so
       # those pull requests pass the signed-commit rule. Optional: `go build`
