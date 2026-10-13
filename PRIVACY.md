@@ -20,11 +20,11 @@
 
 ## Scope
 
-This privacy statement applies to [grdwt.ch](https://grdwt.ch/), the GRIDWATCH applications, and all domains and repositories operated under [@fd1x](https://github.com/fd1x).
+This privacy statement applies to [grdwt.ch](https://grdwt.ch/), the FD1x applications, and all domains and repositories operated under [@fd1x](https://github.com/fd1x).
 
 ## What We Collect
 
-GRIDWATCH does not collect, store, or transmit any personal data. No accounts. No email addresses. No names. No location tracking. No advertising identifiers.
+FD1x does not collect, store, or transmit any personal data. No accounts. No email addresses. No names. No location tracking. No advertising identifiers.
 
 ## Analytics
 
