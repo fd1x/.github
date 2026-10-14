@@ -61,13 +61,15 @@ Beta, release-candidate, and pre-release providers are **not** used — work aro
 
 ## GitHub Actions
 
-Actions are pinned to **exact tag versions** and accompanied by a `# see` comment linking to the release notes:
+Actions are pinned to a **full commit SHA**, with the tag as a trailing comment and a `# see` comment linking to the release notes:
 
 ```yaml
 - name: Checkout
-  # see https://github.com/actions/checkout/releases/tag/v7.0.0
-  uses: actions/checkout@v7.0.0
+  # see https://github.com/actions/checkout/releases/tag/v7.0.1
+  uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 ```
+
+The organization refuses a workflow that references an action by tag or branch.
 
 Version constants live in [`infrastructure-github/locals.tf`](https://github.com/fd1x/infrastructure-github/blob/main/locals.tf) and are templated into workflow files via Terraform.
 
