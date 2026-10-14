@@ -399,7 +399,7 @@ jobs:
           # Following the job alone would rebuild the sites before any CSV import. A sync with
           # nothing to import still gets a sequence, one with no feeds, so null is never that.
           if [[ ( "${asked}" == "queue" || "${asked}" == "all" ) && "${sequence}" == "none" ]]; then
-            echo "::error::CAPSTONE queued no Feed Me sequence although this sync asked for one (feedMe=${asked}; feedMe=queue and feedMe=all both must get one). Likely an image without the feature, no feed matching the staged CSVs, or a storage account mismatch. The data was sent; only the rebuild was withheld. Nothing was rebuilt."
+            echo "::error::CAPSTONE queued no Feed Me sequence although this sync asked for one (feedMe=${asked}). Likely an image without the feature, no feed matching the staged CSVs, or a storage account mismatch. The data was sent; only the rebuild was withheld."
             exit 1
           fi
           if [[ "${job}" == "none" && "${sequence}" == "none" ]]; then
