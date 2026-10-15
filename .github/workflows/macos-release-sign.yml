@@ -9,7 +9,7 @@
 name: macOS Release Sign
 
 # Signs and publishes a macOS release that was built and notarized on a Mac
-# (`task release-mac`) and left there as a draft carrying its zip, with its
+# (`task release-mac-standalone`) and left there as a draft carrying its zip, with its
 # tag pushed after it (`task publish-mac`); the tag push is the trigger.
 # Nothing is built here: the job adds an SPDX SBOM of the source tree,
 # `checksums.txt` over the zips and that SBOM, and a cosign bundle
