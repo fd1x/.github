@@ -20,7 +20,7 @@ on:
       webhook-url:
         description: |
           Full URL of the Craft feeds-sync webhook (e.g.
-          https://capstone.frontierdefensetech.com/feeds/sync). Rendered
+          https://capstone.fd1x.com/feeds/sync). Rendered
           into the consumer repo by infrastructure-github from a Terraform
           variable; mirrors local.capstone_hostname from
           infrastructure-capstone.
