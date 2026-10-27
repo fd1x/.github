@@ -11,9 +11,9 @@
 line-length = 100
 
 # The oldest interpreter any first-party Python has to run on: the
-# docling-worker image is Ubuntu 22.04, whose python3 is 3.10. Pinning it here
-# is what makes a 3.11-only construct fail the lint rather than the container.
-target-version = "py310"
+# docling-worker image is Ubuntu 24.04, whose python3 is 3.12. Pinning it here
+# is what makes a 3.13-only construct fail the lint rather than the container.
+target-version = "py312"
 
 [lint]
 # An allowlist, like golangci.yml's. Each family earns its place:
