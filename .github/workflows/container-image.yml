@@ -50,6 +50,13 @@ on:
           decision, not a side effect of a workflow change
         type: boolean
         default: false
+      acr:
+        description: >-
+          Push the image to ACR. Off only for an image the fleet pulls from
+          GHCR alone, which then needs ghcr and none
+          of the Azure secrets
+        type: boolean
+        default: true
       vendor-go-modules:
         description: >-
           Run `go mod vendor` on the runner before the build, so the
@@ -77,15 +84,16 @@ on:
         default: false
     secrets:
       # The registry this builds into, set on each container repo by
-      # infrastructure-platform.
+      # infrastructure-platform. Optional only so an `acr: false` caller can
+      # omit them; the registry check below fails a run that needs them.
       ACR_NAME:
-        required: true
+        required: false
       AZURE_CLIENT_ID:
-        required: true
+        required: false
       AZURE_TENANT_ID:
-        required: true
+        required: false
       AZURE_SUBSCRIPTION_ID:
-        required: true
+        required: false
       DHI_USERNAME:
         required: false
       DHI_PASSWORD:
@@ -122,6 +130,20 @@ jobs:
       # reduced here to one non-secret boolean the mint step can test.
       APP_AUTH_CONFIGURED: ${{ secrets.REPO_ACCESS_APP_CLIENT_ID != '' && secrets.REPO_ACCESS_APP_PRIVATE_KEY != '' }}
     steps:
+      - name: Check registries
+        env:
+          ACR: ${{ inputs.acr }}
+          GHCR: ${{ inputs.ghcr }}
+        run: |
+          if [ "$ACR" != "true" ] && [ "$GHCR" != "true" ]; then
+            echo "::error::acr and ghcr are both off, so the image would be pushed nowhere"
+            exit 1
+          fi
+          if [ "$ACR" = "true" ] && [ -z "$ACR_NAME" ]; then
+            echo "::error::acr is on but ACR_NAME is empty; the repo needs its secrets from infrastructure-platform"
+            exit 1
+          fi
+
       # see: https://github.com/actions/checkout/releases/tag/v7.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -216,6 +238,7 @@ jobs:
 
       # see: https://github.com/Azure/login/releases/tag/v3.0.1
       - name: Log in to Azure
+        if: inputs.acr
         uses: azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca  # v3.0.1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -223,6 +246,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Log in to ACR
+        if: inputs.acr
         run: az acr login --name "$ACR_NAME"
 
       # GITHUB_TOKEN carries `packages: write`, so GHCR needs no credential of
@@ -246,8 +270,9 @@ jobs:
           IMAGE_NAME: ${{ inputs.image-name }}
           VERSION: ${{ steps.version.outputs.VERSION }}
           COMPOSER_AUTH_TOKEN: ${{ inputs.composer-auth && steps.app-token.outputs.token || '' }}
-          # Needed here as well as on the push below: without it the second
-          # `-t` is missing and the push fails on a tag never applied.
+          # Needed here as well as on the push below: without them a `-t` is
+          # missing and the push fails on a tag never applied.
+          ACR: ${{ inputs.acr }}
           GHCR: ${{ inputs.ghcr }}
         run: |
           # Always pass --secret so a Containerfile can unconditionally mount
@@ -260,7 +285,10 @@ jobs:
           unset COMPOSER_AUTH_TOKEN
           # One build tagged for both registries: two builds would give two
           # digests, and every signature and SBOM below is bound to a digest.
-          TAGS="-t $ACR_LOGIN_SERVER/$IMAGE_NAME:$VERSION"
+          TAGS=""
+          if [ "$ACR" = "true" ]; then
+            TAGS="-t $ACR_LOGIN_SERVER/$IMAGE_NAME:$VERSION"
+          fi
           if [ "$GHCR" = "true" ]; then
             TAGS="$TAGS -t $GHCR_LOGIN_SERVER/$GHCR_OWNER/$IMAGE_NAME:$VERSION"
           fi
@@ -275,26 +303,38 @@ jobs:
         env:
           IMAGE_NAME: ${{ inputs.image-name }}
           VERSION: ${{ steps.version.outputs.VERSION }}
+          ACR: ${{ inputs.acr }}
           GHCR: ${{ inputs.ghcr }}
         run: |
-          IMAGE="$ACR_LOGIN_SERVER/$IMAGE_NAME:$VERSION"
-          docker push "$IMAGE"
-          # Read the ACR digest specifically: with two tags, `RepoDigests[0]` is
-          # whichever registry answered first, so blind indexing follows push order.
-          DIGEST=$(docker inspect --format='{{range .RepoDigests}}{{println .}}{{end}}' "$IMAGE" \
-            | grep "^$ACR_LOGIN_SERVER/$IMAGE_NAME@" | head -1 | cut -d@ -f2)
-          if [ -z "$DIGEST" ]; then
-            echo "::error::Could not resolve the pushed digest for $IMAGE" >&2
-            exit 1
+          # The primary registry, ACR unless the caller turned it off, is the
+          # one the SBOM scans and the GitHub attestations name.
+          if [ "$ACR" = "true" ]; then
+            SUBJECT="$ACR_LOGIN_SERVER/$IMAGE_NAME"
+          else
+            SUBJECT="$GHCR_LOGIN_SERVER/$GHCR_OWNER/$IMAGE_NAME"
           fi
-          echo "DIGEST=$DIGEST" >> "$GITHUB_OUTPUT"
-          echo "IMAGE=$IMAGE" >> "$GITHUB_OUTPUT"
-
+          IMAGE="$SUBJECT:$VERSION"
+          if [ "$ACR" = "true" ]; then
+            docker push "$ACR_LOGIN_SERVER/$IMAGE_NAME:$VERSION"
+          fi
           if [ "$GHCR" = "true" ]; then
             GHCR_IMAGE="$GHCR_LOGIN_SERVER/$GHCR_OWNER/$IMAGE_NAME:$VERSION"
             docker push "$GHCR_IMAGE"
             echo "GHCR_IMAGE=$GHCR_IMAGE" >> "$GITHUB_OUTPUT"
           fi
+          # Read the primary registry's digest specifically: with two tags,
+          # `RepoDigests[0]` is whichever registry answered first.
+          DIGEST=$(docker inspect --format='{{range .RepoDigests}}{{println .}}{{end}}' "$IMAGE" \
+            | grep "^$SUBJECT@" | head -1 | cut -d@ -f2)
+          if [ -z "$DIGEST" ]; then
+            echo "::error::Could not resolve the pushed digest for $IMAGE" >&2
+            exit 1
+          fi
+          {
+            echo "DIGEST=$DIGEST"
+            echo "IMAGE=$IMAGE"
+            echo "SUBJECT=$SUBJECT"
+          } >> "$GITHUB_OUTPUT"
 
       # see: https://github.com/anchore/sbom-action/releases/tag/v0.24.0
       - name: Generate SBOM
@@ -322,7 +362,7 @@ jobs:
         if: inputs.sbom && inputs['github-attestations']
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6  # v4.2.2
         with:
-          subject-name: ${{ env.ACR_LOGIN_SERVER }}/${{ inputs.image-name }}
+          subject-name: ${{ steps.push.outputs.SUBJECT }}
           subject-digest: ${{ steps.push.outputs.DIGEST }}
           predicate-type: https://spdx.dev/Document/v2.3
           predicate-path: sbom.spdx.json
@@ -333,7 +373,7 @@ jobs:
         if: inputs.github-attestations
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8  # v4.2.2
         with:
-          subject-name: ${{ env.ACR_LOGIN_SERVER }}/${{ inputs.image-name }}
+          subject-name: ${{ steps.push.outputs.SUBJECT }}
           subject-digest: ${{ steps.push.outputs.DIGEST }}
           push-to-registry: true
 
@@ -351,9 +391,12 @@ jobs:
         env:
           IMAGE_NAME: ${{ inputs.image-name }}
           DIGEST: ${{ steps.push.outputs.DIGEST }}
+          ACR: ${{ inputs.acr }}
           GHCR: ${{ inputs.ghcr }}
         run: |
-          cosign sign --yes "$ACR_LOGIN_SERVER/$IMAGE_NAME@$DIGEST"
+          if [ "$ACR" = "true" ]; then
+            cosign sign --yes "$ACR_LOGIN_SERVER/$IMAGE_NAME@$DIGEST"
+          fi
           if [ "$GHCR" = "true" ]; then
             cosign sign --yes "$GHCR_LOGIN_SERVER/$GHCR_OWNER/$IMAGE_NAME@$DIGEST"
           fi
@@ -365,12 +408,15 @@ jobs:
         env:
           IMAGE_NAME: ${{ inputs.image-name }}
           DIGEST: ${{ steps.push.outputs.DIGEST }}
+          ACR: ${{ inputs.acr }}
           GHCR: ${{ inputs.ghcr }}
         run: |
-          cosign attest --yes \
-            --predicate sbom.spdx.json \
-            --type spdxjson \
-            "$ACR_LOGIN_SERVER/$IMAGE_NAME@$DIGEST"
+          if [ "$ACR" = "true" ]; then
+            cosign attest --yes \
+              --predicate sbom.spdx.json \
+              --type spdxjson \
+              "$ACR_LOGIN_SERVER/$IMAGE_NAME@$DIGEST"
+          fi
           # A referrer lives in one registry, so the GHCR copy needs its own.
           if [ "$GHCR" = "true" ]; then
             cosign attest --yes \
