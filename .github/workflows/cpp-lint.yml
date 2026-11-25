@@ -1,0 +1,73 @@
+---
+
+# Managed by fd1x/infrastructure-github.
+# Manual edits will be overwritten on the next `terraform apply`.
+#
+# Action pins live in its `locals.tf`. Never merge a Dependabot pull request
+# against this file; bump the pin there instead.
+#
+# cpplint and clang-format over every tracked C++ file, the same pair each
+# Arduino repo's `task lint-cpp` runs. The repo's own CPPLINT.cfg and
+# .clang-format apply, as they do locally; nothing is cloned from `.github`.
+
+name: C++ Lint
+
+on:
+  workflow_call:
+    inputs:
+      exclude-regex:
+        description: 'Extended regex of tracked paths not to lint'
+        type: string
+        # Generated font headers, which every Arduino repo skips locally too.
+        default: '^src/fonts/'
+
+# SHA for pushes, ref for pull requests, so a burst of pushes cannot leave a
+# branch tip holding `cancelled` checks; see infrastructure-github AGENTS.md
+# (Workflow concurrency).
+concurrency:
+  group: ${{ github.repository }}-cpp-lint-${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-26.04
+    steps:
+      # see: https://github.com/actions/checkout/releases/tag/v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      # A virtualenv, because the runner's system Python refuses `pip install`
+      # (PEP 668). Outside the workspace, so no linter walks it.
+      - name: Install linters
+        run: |
+          python3 -m venv ../lint-venv
+          ../lint-venv/bin/pip install --quiet "cpplint==2.0.2" "clang-format==23.1.3"
+          echo "${GITHUB_WORKSPACE}/../lint-venv/bin" >> "${GITHUB_PATH}"
+
+      - name: List C++ files
+        env:
+          EXCLUDE_REGEX: ${{ inputs.exclude-regex }}
+        run: |
+          # One path per line, unquoted, so the xargs below can split on newlines alone.
+          git -c core.quotePath=false ls-files '*.ino' '*.cpp' '*.h' > ../tracked-files
+          # grep exits 1 when every file is excluded, which is fine, and 2 on a bad regex, which is not.
+          status=0
+          grep -Ev "${EXCLUDE_REGEX}" ../tracked-files > ../cpp-files || status=$?
+          if [ "${status}" -gt 1 ]; then
+            echo "::error::exclude-regex is not a valid extended regex: ${EXCLUDE_REGEX}"
+            exit 1
+          fi
+          echo "$(wc -l < ../cpp-files) files"
+
+      - name: cpplint
+        run: xargs --delimiter='\n' --no-run-if-empty cpplint --quiet < ../cpp-files
+
+      # Runs even when cpplint failed, so one push reports both.
+      - name: clang-format
+        if: success() || failure()
+        run: xargs --delimiter='\n' --no-run-if-empty clang-format --dry-run --Werror < ../cpp-files
