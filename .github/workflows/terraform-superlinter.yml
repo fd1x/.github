@@ -51,10 +51,19 @@ jobs:
           cp ../fleet-config/yamllint.yml .github/linters/.yamllint.yml
           cp ../fleet-config/tflint.hcl .github/linters/.tflint.hcl
 
+      # see: https://github.com/actions/setup-go/releases/tag/v7.0.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
+        with:
+          go-version: stable
+          cache: false
+
       # No packaged linter can express this: it fails the job on a `# see` link
       # whose version no longer matches its provider's `required_providers`.
+      # The file is tooling's tools/terraform-see-links/main.go, copied to
+      # `.github` by github-configs; it is standard library only, so `go run`
+      # needs no module.
       - name: Check `# see` link versions
-        run: python3 ../fleet-config/terraform-see-links.py .
+        run: go run ../fleet-config/terraform-see-links.go .
 
       # see: https://github.com/super-linter/super-linter/releases/tag/v9.0.0
       - uses: super-linter/super-linter/slim@2da136927bd4a73596db63044b504547c62cb854  # v9.0.0
