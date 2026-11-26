@@ -496,6 +496,18 @@ jobs:
           name: coverage-${{ inputs.coverage-from-runner }}
           path: coverage
 
+      # see: https://github.com/actions/setup-go/releases/tag/v7.0.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Checkout the coverage gate
+        run: git clone --depth 1 --branch main --single-branch https://github.com/fd1x/.github.git ../fleet-config
+
+      # The gate is tooling's tools/coverage-floor/main.go, copied to `.github`
+      # by github-configs; it is standard library only, so `go run` needs no
+      # module.
       - name: Enforce the coverage floor
         shell: bash
         env:
@@ -508,58 +520,7 @@ jobs:
             echo "::error::no coverage report found in the downloaded artifact" >&2
             exit 1
           fi
-          python3 - "$FILE" <<'PY'
-          import os
-          import sys
-          import xml.etree.ElementTree as ET
-
-          # stdlib ElementTree rather than defusedxml: it resolves no external
-          # entities, and this report comes from the run. Revisit if that changes.
-          root = ET.parse(sys.argv[1]).getroot()
-
-          floor = float(os.environ["COVERAGE_FLOOR"]) / 100
-          prefixes = tuple(
-              p.strip().lower()
-              for p in os.environ.get("COVERAGE_PREFIXES", "").splitlines()
-              if p.strip()
-          )
-          if not prefixes:
-              print("::error::coverage-floor is set but coverage-prefixes is empty")
-              sys.exit(1)
-
-          # Per-prefix buckets, so a failure names the module that slipped.
-          buckets = {p: [0, 0] for p in prefixes}
-
-          for class_el in root.findall(".//class"):
-              filename = class_el.get("filename", "").replace("\\", "/").lower()
-              prefix = next((p for p in prefixes if filename.startswith(p)), None)
-              if prefix is None:
-                  continue
-              for line_el in class_el.findall("./lines/line"):
-                  buckets[prefix][1] += 1
-                  if int(line_el.get("hits", "0")) > 0:
-                      buckets[prefix][0] += 1
-
-          covered = sum(b[0] for b in buckets.values())
-          valid = sum(b[1] for b in buckets.values())
-          if valid == 0:
-              print("::error::no coverage data matched any of: " + ", ".join(prefixes))
-              sys.exit(1)
-
-          overall = covered / valid
-          print(f"overall: {overall * 100:.2f}% ({covered}/{valid})")
-          for p, (c, v) in sorted(buckets.items()):
-              if v == 0:
-                  print(f"  {p}: no data")
-                  continue
-              rate = c / v
-              marker = "" if rate >= floor else f"  [below {floor * 100:.0f}%]"
-              print(f"  {p}: {rate * 100:.2f}% ({c}/{v}){marker}")
-
-          # The gate is on the overall rate; the per-prefix marker above is
-          # informational until every module clears the floor on its own.
-          sys.exit(0 if overall >= floor else 1)
-          PY
+          go run ../fleet-config/coverage-floor.go "$FILE"
 
   build-macos:
     name: build-macos
